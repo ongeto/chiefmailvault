@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChiefMailVault — CWS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-12">
+  <div id="app">
+    <!-- Login -->
+    <div id="login-view" class="flex items-center justify-center min-h-screen">
+      <div class="bg-slate-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-slate-700">
+        <h1 class="text-2xl font-bold text-center mb-2">ChiefMailVault</h1>
+        <p class="text-slate-400 text-center text-sm mb-6">Chief Web Services Email Archive</p>
+        <form id="login-form" class="space-y-4">
+          <input type="text" id="username" placeholder="Username" required
+            class="w-full px-4 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="password" id="password" placeholder="Password" required
+            class="w-full px-4 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition">
+            Sign In
+          </button>
+          <p id="login-error" class="text-red-400 text-sm hidden"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard-view" class="hidden">
+      <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+        <div>
+          <h1 class="text-xl font-bold">ChiefMailVault</h1>
+          <p class="text-slate-400 text-sm">Email Archive &amp; Optimization</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <label for="nav-domain-select" class="text-sm text-slate-400">Domain</label>
+            <select id="nav-domain-select" class="px-3 py-1.5 bg-slate-700 rounded border border-slate-600 text-sm min-w-[180px]">
+              <option value="">All Domains</option>
+            </select>
+          </div>
+          <span id="user-label" class="text-sm text-slate-400"></span>
+          <button id="logout-btn" class="px-3 py-1 text-sm bg-slate-700 hover:bg-slate-600 rounded">Logout</button>
+        </div>
+      </header>
+
+      <main class="p-6 max-w-7xl mx-auto space-y-6">
+        <!-- Metrics -->
+        <section id="metrics" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <p class="text-slate-400 text-xs uppercase">Domains</p>
+            <p id="stat-domains" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <p class="text-slate-400 text-xs uppercase">Mailboxes</p>
+            <p id="stat-mailboxes" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <p class="text-slate-400 text-xs uppercase">Messages</p>
+            <p id="stat-messages" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <p class="text-slate-400 text-xs uppercase">Duplicates</p>
+            <p id="stat-duplicates" class="text-2xl font-bold text-amber-400">0</p>
+          </div>
+          <div class="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <p class="text-slate-400 text-xs uppercase">Large (&gt;25MB)</p>
+            <p id="stat-large" class="text-2xl font-bold text-red-400">0</p>
+          </div>
+        </section>
+
+        <!-- Actions -->
+        <section class="flex flex-wrap gap-3">
+          <button id="btn-backup-all" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium">Run Backup</button>
+          <button id="btn-ai-scan" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-medium">Run AI Scan</button>
+          <button id="btn-refresh" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm">Refresh Stats</button>
+        </section>
+
+        <!-- Live Log -->
+        <section class="bg-slate-800 rounded-lg border border-slate-700">
+          <div class="px-4 py-3 border-b border-slate-700 font-medium">Live Log</div>
+          <div id="log-terminal" class="h-48 overflow-y-auto p-4 font-mono text-xs text-green-400 bg-black/30"></div>
+        </section>
+
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+            <h2 class="text-lg font-semibold">Triage</h2>
+            <div class="flex items-center gap-2">
+              <label for="triage-mailbox-select" class="text-sm text-slate-400">Mailbox</label>
+              <select id="triage-mailbox-select" class="px-3 py-1.5 bg-slate-700 rounded border border-slate-600 text-sm min-w-[220px]">
+                <option value="">All mailboxes</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-slate-500 text-sm mb-4">Review backup candidates before flagging for server deletion. Filter by mailbox to work one account at a time. Nothing is removed until you expunge manually.</p>
+        </div>
+
+        <div class="grid lg:grid-cols-2 gap-6">
+          <!-- Duplicates -->
+          <section class="bg-slate-800 rounded-lg border border-slate-700">
+            <div class="px-4 py-3 border-b border-slate-700">
+              <div class="flex justify-between items-start gap-3">
+                <div>
+                  <span class="font-medium">Duplicates</span>
+                  <p class="text-slate-500 text-xs mt-1">Same email in Inbox and Sent (self-sent). Run backup after sending — Trash/Junk copies do not count.</p>
+                </div>
+                <button id="btn-flag-selected" class="px-3 py-1 text-xs bg-amber-600 hover:bg-amber-500 rounded shrink-0">Flag for Deletion</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto max-h-64">
+              <table class="w-full text-sm">
+                <thead class="text-slate-400 text-xs uppercase">
+                  <tr><th class="p-2"><input type="checkbox" id="dup-select-all"></th><th class="p-2 text-left">Mailbox</th><th class="p-2 text-left">Subject</th><th class="p-2 text-left">Date</th><th class="p-2">Status</th></tr>
+                </thead>
+                <tbody id="duplicates-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Large Emails -->
+          <section class="bg-slate-800 rounded-lg border border-slate-700">
+            <div class="px-4 py-3 border-b border-slate-700">
+              <div class="flex justify-between items-start gap-3">
+                <div>
+                  <span class="font-medium">Large Emails</span>
+                  <p class="text-slate-500 text-xs mt-1">Greater than 25 MB — archived locally, candidates for server cleanup</p>
+                </div>
+                <button id="btn-flag-large" class="px-3 py-1 text-xs bg-red-600 hover:bg-red-500 rounded shrink-0">Flag for Deletion</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto max-h-64">
+              <table class="w-full text-sm">
+                <thead class="text-slate-400 text-xs uppercase">
+                  <tr><th class="p-2"><input type="checkbox" id="large-select-all"></th><th class="p-2 text-left">Mailbox</th><th class="p-2 text-left">Subject</th><th class="p-2 text-left">Date</th><th class="p-2 text-right">Size</th><th class="p-2">Status</th></tr>
+                </thead>
+                <tbody id="large-emails-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- AI Suggestions (optional) -->
+        <section class="bg-slate-800 rounded-lg border border-slate-700">
+          <div class="px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+            <div>
+              <span class="font-medium">AI Cleanup Suggestions</span>
+              <p class="text-slate-500 text-xs mt-1">Approve flags messages on Hostinger — expunge manually when ready</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <button id="btn-ai-scan-panel" class="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-500 rounded">Run AI Scan</button>
+              <button id="btn-approve-suggestions" class="px-3 py-1 text-xs bg-green-600 hover:bg-green-500 rounded">Approve &amp; Flag for Deletion</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto max-h-64">
+            <table class="w-full text-sm">
+              <thead class="text-slate-400 text-xs uppercase">
+                <tr>
+                  <th class="p-2"><input type="checkbox" id="sug-select-all"></th>
+                  <th class="p-2 text-left">Mailbox</th>
+                  <th class="p-2 text-left">Subject</th>
+                  <th class="p-2 text-left">Date</th>
+                  <th class="p-2 text-left">Category</th>
+                  <th class="p-2 text-left">Reason</th>
+                  <th class="p-2">Status</th>
+                </tr>
+              </thead>
+              <tbody id="suggestions-body"></tbody>
+            </table>
+          </div>
+          <p class="px-4 py-2 text-slate-500 text-xs border-t border-slate-700">
+            <strong>Bloated thread</strong> = older message in a conversation (2+ emails with the same subject line).
+            The newest is kept; older replies are suggested for cleanup. See README for full criteria.
+          </p>
+        </section>
+
+        <!-- Expunge -->
+        <section class="bg-slate-800 rounded-lg border border-slate-700 p-4">
+          <h3 class="font-medium mb-3">Expunge Queue</h3>
+          <div class="flex gap-3 items-center">
+            <select id="expunge-mailbox" class="px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm flex-1 max-w-md"></select>
+            <button id="btn-expunge" class="px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-medium">Empty Deleted Queue</button>
+          </div>
+          <p class="text-slate-500 text-xs mt-2">Flag marks messages for deletion on Hostinger via IMAP. Expunge permanently removes flagged messages from each affected folder.</p>
+        </section>
+
+        <!-- Restore / Import -->
+        <section class="bg-slate-800 rounded-lg border border-slate-700">
+          <div class="px-4 py-3 border-b border-slate-700">
+            <div class="flex flex-wrap justify-between items-start gap-3">
+              <div>
+                <h3 class="font-medium">Restore to Server</h3>
+                <p class="text-slate-500 text-xs mt-1">Upload selected local backups to their original folders. Existing Message-IDs are skipped. Uses Hostinger quota.</p>
+              </div>
+              <div class="flex flex-wrap gap-2 shrink-0">
+                <button id="btn-import-preview" class="px-3 py-1 text-xs bg-slate-600 hover:bg-slate-500 rounded">Preview Selected</button>
+                <button id="btn-import-run" class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-500 rounded">Restore Selected</button>
+              </div>
+            </div>
+          </div>
+          <div class="px-4 py-3 border-b border-slate-700 flex flex-wrap gap-3 items-center">
+            <input type="search" id="restore-search" placeholder="Search subject, sender, Message-ID" class="px-3 py-1.5 bg-slate-700 rounded border border-slate-600 text-sm flex-1 min-w-[200px]">
+            <button id="btn-restore-search" class="px-3 py-1.5 text-xs bg-slate-600 hover:bg-slate-500 rounded">Search</button>
+            <span id="restore-count" class="text-xs text-slate-400"></span>
+          </div>
+          <div id="restore-warning" class="hidden px-4 py-2 text-xs text-amber-300 bg-amber-950/40 border-b border-amber-900/50" role="status" aria-live="polite"></div>
+          <div class="overflow-x-auto max-h-72">
+            <table class="w-full text-sm">
+              <thead class="text-slate-400 text-xs uppercase">
+                <tr>
+                  <th class="p-2"><input type="checkbox" id="restore-select-all"></th>
+                  <th class="p-2 text-left">Mailbox</th>
+                  <th class="p-2 text-left">Folder</th>
+                  <th class="p-2 text-left">Subject</th>
+                  <th class="p-2 text-left">Date</th>
+                  <th class="p-2 text-right">Size</th>
+                </tr>
+              </thead>
+              <tbody id="restore-body"></tbody>
+            </table>
+          </div>
+          <div class="px-4 py-2 border-t border-slate-700 flex justify-between items-center text-xs text-slate-500">
+            <span id="restore-status-label">Select a mailbox in Triage to list backups, or leave All to browse recent items.</span>
+            <div class="flex gap-2">
+              <button id="btn-restore-prev" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-40" disabled>Prev</button>
+              <button id="btn-restore-next" class="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded disabled:opacity-40" disabled>Next</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings -->
+        <section class="bg-slate-800 rounded-lg border border-slate-700 p-4">
+          <h3 class="font-medium mb-4">Settings</h3>
+          <div class="grid md:grid-cols-2 gap-6">
+            <form id="domain-form" class="space-y-3">
+              <h4 class="text-sm text-slate-400 uppercase">Add Domain</h4>
+              <input type="text" id="domain-name" placeholder="domain.com" required class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm">
+              <input type="text" id="domain-imap" placeholder="imap.hostinger.com" value="imap.hostinger.com" class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm">
+              <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">Add Domain</button>
+            </form>
+            <form id="mailbox-form" class="space-y-3">
+              <h4 class="text-sm text-slate-400 uppercase">Add Mailbox</h4>
+              <select id="mailbox-domain" class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm"></select>
+              <input type="email" id="mailbox-email" placeholder="info@domain.com" required class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm">
+              <input type="password" id="mailbox-password" placeholder="Mailbox password" required class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm">
+              <div class="flex gap-2">
+                <button type="button" id="btn-test-connection" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded text-sm">Test Connection</button>
+                <button type="submit" id="btn-add-mailbox" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm" disabled>Add Mailbox</button>
+              </div>
+              <p id="mailbox-validation-msg" class="text-sm hidden"></p>
+            </form>
+          </div>
+          <div class="mt-4">
+            <h4 class="text-sm text-slate-400 uppercase mb-2">Mailboxes</h4>
+            <div id="mailbox-list" class="text-sm space-y-1"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Edit Mailbox Modal -->
+    <div id="edit-mailbox-modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-medium mb-4">Edit Mailbox</h3>
+        <form id="edit-mailbox-form" class="space-y-3">
+          <input type="hidden" id="edit-mailbox-id">
+          <div>
+            <label class="text-xs text-slate-400 uppercase">Domain</label>
+            <select id="edit-mailbox-domain" class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm mt-1"></select>
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 uppercase">Email</label>
+            <input type="email" id="edit-mailbox-email" required class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm mt-1">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 uppercase">New Password (leave blank to keep current)</label>
+            <input type="password" id="edit-mailbox-password" placeholder="Leave blank to keep current" class="w-full px-3 py-2 bg-slate-700 rounded border border-slate-600 text-sm mt-1">
+          </div>
+          <p id="edit-validation-msg" class="text-sm hidden"></p>
+          <div class="flex gap-2 justify-end pt-2">
+            <button type="button" id="btn-cancel-edit" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded text-sm">Cancel</button>
+            <button type="button" id="btn-test-edit-connection" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded text-sm">Test Connection</button>
+            <button type="submit" id="btn-save-edit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <footer class="fixed bottom-0 inset-x-0 z-50 bg-slate-900/95 border-t border-slate-700 px-4 py-2.5 text-center text-xs text-slate-500">
+    Powered by <a href="https://chiefwebs.co.ke" class="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener noreferrer">Chief Web Services</a>
+  </footer>
+
+  <script src="/static/js/dashboard.js?v=7"></script>
+</body>
+</html>
